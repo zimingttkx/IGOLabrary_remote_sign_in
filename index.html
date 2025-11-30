@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>应用控制器</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .button { padding: 10px 20px; font-size: 16px; margin: 10px; cursor: pointer; }
+        #status { margin-top: 20px; font-size: 14px; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>应用控制器</h1>
+    <div>
+        <button id="oneClickStart" class="button">一键启动 (安装并运行)</button>
+        <button id="start" class="button">启动服务</button>
+        <button id="stop" class="button">停止服务</button>
+    </div>
+    <div id="status">请选择一个操作</div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        async function sendCommand(command) {
+            statusDiv.textContent = `正在执行: ${command}...`;
+            try {
+                const response = await fetch('/' + command, { method: 'POST' });
+                const result = await response.text();
+                statusDiv.textContent = `命令 "${command}" 执行完毕: \n${result}`;
+            } catch (error) {
+                statusDiv.textContent = `执行 "${command}" 时出错: ${error}`;
+            }
+        }
+
+        document.getElementById('oneClickStart').addEventListener('click', () => sendCommand('one-click-start'));
+        document.getElementById('start').addEventListener('click', () => sendCommand('start'));
+        document.getElementById('stop').addEventListener('click', () => sendCommand('stop'));
+    </script>
+</body>
+</html>
