@@ -1,4 +1,4 @@
-# iBeacon 蓝牙签到模拟器
+# 基于iBeacon的我去图书馆远程签到
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Version](https://img.shields.io/badge/version-1.0-blue.svg)
