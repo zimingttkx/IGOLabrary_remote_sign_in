@@ -5,11 +5,27 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <signal.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
+// 全局变量用于信号处理
+static volatile bool running = true;
+static int global_device_handle = -1;
+
+// 信号处理函数
+void signal_handler(int signum) {
+    std::cout << "\n>>> 收到退出信号，正在清理..." << std::endl;
+    running = false;
+}
+
 int main() {
+    // 注册信号处理器
+    signal(SIGINT, signal_handler);   // Ctrl+C
+    signal(SIGTERM, signal_handler);  // kill命令
+    signal(SIGHUP, signal_handler);   // 终端关闭
+
     // 1. 获取并打开蓝牙设备
     int device_id = hci_get_route(NULL);
     if (device_id < 0) {
@@ -22,6 +38,9 @@ int main() {
         std::cerr << "错误: 无法打开蓝牙设备 (请使用 sudo 运行)" << std::endl;
         return -1;
     }
+
+    // 保存到全局变量供信号处理器使用
+    global_device_handle = device_handle;
 
     std::cout << ">>> 蓝牙设备已就绪 (ID: " << device_id << ")" << std::endl;
 
@@ -153,8 +172,24 @@ int main() {
     std::cout << ">>> 目标 Minor: 42474 (0xA5EA)" << std::endl;
     std::cout << ">>> 按 Ctrl+C 停止" << std::endl;
 
-    // 保持进程
-    while(true) sleep(10);
+    // 保持进程运行，直到收到退出信号
+    while(running) {
+        sleep(1);
+    }
+
+    // 清理资源
+    std::cout << ">>> 正在关闭广播..." << std::endl;
+    if (hci_le_set_advertise_enable(device_handle, 0, 1000) < 0) {
+        std::cerr << "警告: 关闭广播失败 (errno=" << errno << ")" << std::endl;
+    } else {
+        std::cout << ">>> 广播已关闭" << std::endl;
+    }
+
+    std::cout << ">>> 正在关闭蓝牙设备..." << std::endl;
+    hci_close_dev(device_handle);
+    global_device_handle = -1;
+
+    std::cout << ">>> 清理完成，程序已安全退出" << std::endl;
 
     return 0;
 }
